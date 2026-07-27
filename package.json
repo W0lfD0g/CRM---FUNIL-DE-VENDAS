@@ -1,0 +1,12 @@
+{
+  "name": "crm-funil-de-vendas",
+  "version": "1.0.0",
+  "description": "CRM - Funil de Vendas",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static HTML project - no build needed'"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  }
+}
