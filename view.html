@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualizar Orçamento</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #1e293b;
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { font-size: 15px; font-weight: 600; }
+  header span { font-size: 12px; color: #94a3b8; }
+  iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+  }
+  .error-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📄 Orçamento</h1>
+  <span id="statusText">Carregando...</span>
+</header>
+
+<div id="content"></div>
+
+<script>
+  function getParam(name) {
+    return new URLSearchParams(location.search).get(name);
+  }
+
+  function registrarVisualizacao(id) {
+    const key = 'views_orcamento_' + id;
+    const raw = localStorage.getItem(key);
+    let arr = [];
+    try { arr = raw ? JSON.parse(raw) : []; } catch { arr = []; }
+    arr.push(new Date().toISOString());
+    localStorage.setItem(key, JSON.stringify(arr));
+    return arr.length;
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const id = getParam('id');
+    const content = document.getElementById('content');
+    const statusText = document.getElementById('statusText');
+
+    if (!id) {
+      content.innerHTML = '<div class="error-box">Link inválido: ID não informado.</div>';
+      statusText.textContent = 'Erro';
+      return;
+    }
+
+    const pdfData = localStorage.getItem('pdf_orcamento_' + id);
+
+    if (!pdfData) {
+      content.innerHTML = `
+        <div class="error-box">
+          ⚠️ Orçamento não encontrado.<br>
+          Isso pode acontecer se você estiver abrindo em um navegador diferente<br>
+          de onde o arquivo foi enviado. Peça um novo link ao responsável.
+        </div>
+      `;
+      statusText.textContent = 'Não encontrado';
+      return;
+    }
+
+    // Registra a visualização
+    const totalViews = registrarVisualizacao(id);
+    statusText.textContent = 'Visualização registrada';
+
+    // Exibe o PDF
+    const iframe = document.createElement('iframe');
+    iframe.src = pdfData;
+    content.appendChild(iframe);
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.flex = '1';
+  });
+</script>
+
+</body>
+</html>
