@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Detalhes do Lead</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 30px 15px;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  h1 {
+    color: #2c3e50;
+    font-size: 22px;
+    margin-top: 0;
+  }
+  .info {
+    margin: 15px 0;
+    padding: 12px;
+    background: #f4f6f8;
+    border-radius: 8px;
+  }
+  .info p {
+    margin: 6px 0;
+    font-size: 14px;
+    color: #333;
+  }
+  .info strong { color: #2c3e50; }
+  .anexo-box {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .anexo-box a {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #8e44ad;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .voltar {
+    display: inline-block;
+    margin-top: 20px;
+    color: #2980b9;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .erro {
+    text-align: center;
+    color: #e74c3c;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="conteudo">
+  <p class="erro">Carregando...</p>
+</div>
+
+<script>
+function getParam(nome) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(nome);
+}
+
+const id = getParam('id');
+const cards = JSON.parse(localStorage.getItem('crm_cards') || '[]');
+const card = cards.find(c => c.id === id);
+
+const container = document.getElementById('conteudo');
+
+if (!card) {
+  container.innerHTML = `<p class="erro">⚠️ Lead não encontrado. Verifique o link ou abra este arquivo a partir do mesmo navegador em que o card foi criado.</p>
+  <a class="voltar" href="index.html">← Voltar ao Kanban</a>`;
+} else {
+  const ETAPAS_LABEL = {
+    novo: '🆕 Novo Lead',
+    contato: '📞 Contato Realizado',
+    proposta: '📄 Proposta Enviada',
+    negociacao: '🤝 Negociação',
+    fechado: '✅ Fechado (Ganho)',
+    perdido: '❌ Perdido'
+  };
+
+  container.innerHTML = `
+    <h1>${card.nome}</h1>
+    <div class="info">
+      <p><strong>Empresa:</strong> ${card.empresa || '-'}</p>
+      <p><strong>Telefone:</strong> ${card.telefone || '-'}</p>
+      <p><strong>Valor Estimado:</strong> R$ ${parseFloat(card.valor || 0).toLocaleString('pt-BR')}</p>
+      <p><strong>Etapa:</strong> ${ETAPAS_LABEL[card.etapa] || card.etapa}</p>
+      <p><strong>Observações:</strong> ${card.obs || 'Nenhuma observação registrada.'}</p>
+    </div>
+    ${card.anexo ? `
+      <div class="anexo-box">
+        <a href="${card.anexo}" target="_blank">📎 Abrir Anexo</a>
+      </div>
+    ` : ''}
+    <a class="voltar" href="index.html">← Voltar ao Kanban</a>
+  `;
+}
+</script>
+</body>
+</html>
