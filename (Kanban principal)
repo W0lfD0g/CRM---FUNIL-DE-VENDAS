@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CRM - Funil de Vendas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #2c3e50;
+  }
+  .board {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+  .column {
+    background: #e9edf1;
+    border-radius: 10px;
+    min-width: 260px;
+    flex: 1;
+    padding: 10px;
+    min-height: 500px;
+  }
+  .column h2 {
+    font-size: 15px;
+    text-align: center;
+    color: #34495e;
+    margin: 5px 0 10px;
+  }
+  .card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    cursor: grab;
+  }
+  .card:active { cursor: grabbing; }
+  .card h3 {
+    margin: 0 0 5px;
+    font-size: 14px;
+    color: #2c3e50;
+  }
+  .card p {
+    margin: 3px 0;
+    font-size: 12px;
+    color: #555;
+  }
+  .card .actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .card .actions button {
+    font-size: 11px;
+    border: none;
+    background: none;
+    color: #2980b9;
+    cursor: pointer;
+  }
+  .card .actions button.del { color: #e74c3c; }
+  .add-btn {
+    display: block;
+    margin: 0 auto 20px;
+    padding: 10px 20px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: #219150; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+  }
+  .modal h2 { margin-top: 0; font-size: 18px; }
+  .modal label {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 13px;
+    color: #333;
+  }
+  .modal input, .modal select, .modal textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 13px;
+  }
+  .modal .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal .modal-actions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn-salvar { background: #27ae60; color: white; }
+  .btn-cancelar { background: #ccc; }
+</style>
+</head>
+<body>
+
+<h1>📊 CRM - Funil de Vendas</h1>
+<button class="add-btn" onclick="abrirModal()">+ Novo Lead</button>
+
+<div class="board" id="board"></div>
+
+<!-- Modal de cadastro/edição -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitulo">Novo Card</h2>
+    <input type="hidden" id="cardId">
+
+    <label>Nome do Cliente</label>
+    <input type="text" id="nome" placeholder="Ex: João Silva">
+
+    <label>Empresa</label>
+    <input type="text" id="empresa" placeholder="Ex: Empresa XYZ">
+
+    <label>Telefone/WhatsApp</label>
+    <input type="text" id="telefone" placeholder="Ex: (41) 99999-9999">
+
+    <label>Valor Estimado (R$)</label>
+    <input type="number" id="valor" placeholder="Ex: 5000">
+
+    <label>Observações</label>
+    <textarea id="obs" rows="3" placeholder="Detalhes sobre o lead..."></textarea>
+
+    <label>Link do Anexo (PDF, imagem, etc.)</label>
+    <input type="text" id="anexo" placeholder="Cole aqui o link do arquivo">
+
+    <label>Etapa do Funil</label>
+    <select id="etapa">
+      <option value="novo">Novo Lead</option>
+      <option value="contato">Contato Realizado</option>
+      <option value="proposta">Proposta Enviada</option>
+      <option value="negociacao">Negociação</option>
+      <option value="fechado">Fechado (Ganho)</option>
+      <option value="perdido">Perdido</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarCard()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ETAPAS = [
+  { key: 'novo', titulo: '🆕 Novo Lead' },
+  { key: 'contato', titulo: '📞 Contato Realizado' },
+  { key: 'proposta', titulo: '📄 Proposta Enviada' },
+  { key: 'negociacao', titulo: '🤝 Negociação' },
+  { key: 'fechado', titulo: '✅ Fechado (Ganho)' },
+  { key: 'perdido', titulo: '❌ Perdido' }
+];
+
+function getCards() {
+  return JSON.parse(localStorage.getItem('crm_cards') || '[]');
+}
+function saveCards(cards) {
+  localStorage.setItem('crm_cards', JSON.stringify(cards));
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const cards = getCards();
+
+  ETAPAS.forEach(etapa => {
+    const col = document.createElement('div');
+    col.className = 'column';
+    col.dataset.etapa = etapa.key;
+    col.ondragover = (e) => e.preventDefault();
+    col.ondrop = (e) => onDrop(e, etapa.key);
+
+    const cardsEtapa = cards.filter(c => c.etapa === etapa.key);
+    const total = cardsEtapa.reduce((s, c) => s + (parseFloat(c.valor) || 0), 0);
+
+    col.innerHTML = `<h2>${etapa.titulo} (${cardsEtapa.length}) - R$ ${total.toLocaleString('pt-BR')}</h2>`;
+
+    cardsEtapa.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.draggable = true;
+      div.dataset.id = card.id;
+      div.ondragstart = (e) => e.dataTransfer.setData('id', card.id);
+
+      div.innerHTML = `
+        <h3>${card.nome}</h3>
+        <p>🏢 ${card.empresa || '-'}</p>
+        <p>📱 ${card.telefone || '-'}</p>
+        <p>💰 R$ ${parseFloat(card.valor || 0).toLocaleString('pt-BR')}</p>
+        <div class="actions">
+          <button onclick="editarCard('${card.id}')">✏️ Editar</button>
+          ${card.anexo ? `<a href="view.html?id=${card.id}" target="_blank" style="font-size:11px;color:#8e44ad;">📎 Ver anexo</a>` : ''}
+          <button class="del" onclick="excluirCard('${card.id}')">🗑️</button>
+        </div>
+      `;
+      col.appendChild(div);
+    });
+
+    board.appendChild(col);
+  });
+}
+
+function onDrop(e, novaEtapa) {
+  const id = e.dataTransfer.getData('id');
+  const cards = getCards();
+  const card = cards.find(c => c.id === id);
+  if (card) {
+    card.etapa = novaEtapa;
+    saveCards(cards);
+    renderBoard();
+  }
+}
+
+function abrirModal(id = null) {
+  document.getElementById('modalTitulo').textContent = id ? 'Editar Card' : 'Novo Card';
+  document.getElementById('cardId').value = id || '';
+
+  if (id) {
+    const card = getCards().find(c => c.id === id);
+    document.getElementById('nome').value = card.nome || '';
+    document.getElementById('empresa').value = card.empresa || '';
+    document.getElementById('telefone').value = card.telefone || '';
+    document.getElementById('valor').value = card.valor || '';
+    document.getElementById('obs').value = card.obs || '';
+    document.getElementById('anexo').value = card.anexo || '';
+    document.getElementById('etapa').value = card.etapa || 'novo';
+  } else {
+    document.getElementById('nome').value = '';
+    document.getElementById('empresa').value = '';
+    document.getElementById('telefone').value = '';
+    document.getElementById('valor').value = '';
+    document.getElementById('obs').value = '';
+    document.getElementById('anexo').value = '';
+    document.getElementById('etapa').value = 'novo';
+  }
+
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function fecharModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function salvarCard() {
+  const id = document.getElementById('cardId').value;
+  const nome = document.getElementById('nome').value.trim();
+
+  if (!nome) {
+    alert('Por favor, preencha o nome do cliente.');
+    return;
+  }
+
+  const dados = {
+    nome,
+    empresa: document.getElementById('empresa').value.trim(),
+    telefone: document.getElementById('telefone').value.trim(),
+    valor: document.getElementById('valor').value,
+    obs: document.getElementById('obs').value.trim(),
+    anexo: document.getElementById('anexo').value.trim(),
+    etapa: document.getElementById('etapa').value
+  };
+
+  let cards = getCards();
+
+  if (id) {
+    const card = cards.find(c => c.id === id);
+    Object.assign(card, dados);
+  } else {
+    dados.id = Date.now().toString();
+    cards.push(dados);
+  }
+
+  saveCards(cards);
+  fecharModal();
+  renderBoard();
+}
+
+function editarCard(id) {
+  abrirModal(id);
+}
+
+function excluirCard(id) {
+  if (!confirm('Tem certeza que deseja excluir este card?')) return;
+  let cards = getCards().filter(c => c.id !== id);
+  saveCards(cards);
+  renderBoard();
+}
+
+renderBoard();
+</script>
+</body>
+</html>
